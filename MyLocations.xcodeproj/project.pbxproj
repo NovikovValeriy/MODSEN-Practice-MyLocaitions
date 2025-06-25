@@ -148,10 +148,11 @@
 				DEVELOPMENT_TEAM = Z373K5B9WV;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MyLocations/Info.plist;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Это приложение позволяет вам отслеживать интересные места.\nЕму нужен доступ к GPS-координатам вашего местоположения.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -175,10 +176,11 @@
 				DEVELOPMENT_TEAM = Z373K5B9WV;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MyLocations/Info.plist;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Это приложение позволяет вам отслеживать интересные места.\nЕму нужен доступ к GPS-координатам вашего местоположения.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
