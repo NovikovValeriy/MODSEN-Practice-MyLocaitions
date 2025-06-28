@@ -57,6 +57,11 @@ class CurrentLocationViewController: UIViewController {
         
         updateLabels()
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.isNavigationBarHidden = true
+    }
 
     // MARK: - Configuration
 
@@ -168,6 +173,7 @@ class CurrentLocationViewController: UIViewController {
         tagButton.translatesAutoresizingMaskIntoConstraints = false
         
         //tagButton.backgroundColor = .yellow
+        tagButton.addTarget(self, action: #selector(goToTagLocation), for: .touchUpInside)
         
         view.addSubview(tagButton)
         
@@ -226,6 +232,11 @@ class CurrentLocationViewController: UIViewController {
             startLocationManager()
         }
         updateLabels()
+    }
+    
+    @objc private func goToTagLocation() {
+        let locationDetailsVC = LocationDetailsViewController()
+        navigationController?.pushViewController(locationDetailsVC, animated: true)
     }
     
     // MARK: - Helper methods
@@ -409,8 +420,9 @@ extension CurrentLocationViewController: CLLocationManagerDelegate {
 
 #Preview {
     let rootVC = CurrentLocationViewController()
+    let rootNavigationVC = UINavigationController(rootViewController: rootVC)
     let tabBarController = UITabBarController()
-    tabBarController.setViewControllers([rootVC], animated: false)
+    tabBarController.setViewControllers([rootNavigationVC], animated: false)
     return tabBarController
     //rootVC
 }
