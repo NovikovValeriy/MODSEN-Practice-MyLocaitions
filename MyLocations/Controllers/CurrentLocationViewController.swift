@@ -236,6 +236,8 @@ class CurrentLocationViewController: UIViewController {
     
     @objc private func goToTagLocation() {
         let locationDetailsVC = LocationDetailsViewController()
+        locationDetailsVC.coordinate = location!.coordinate
+        locationDetailsVC.placemark = placemark
         navigationController?.pushViewController(locationDetailsVC, animated: true)
     }
     
@@ -424,5 +426,4 @@ extension CurrentLocationViewController: CLLocationManagerDelegate {
     let tabBarController = UITabBarController()
     tabBarController.setViewControllers([rootNavigationVC], animated: false)
     return tabBarController
-    //rootVC
 }

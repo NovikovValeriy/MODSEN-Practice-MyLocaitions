@@ -6,6 +6,14 @@
 //
 
 import UIKit
+import CoreLocation
+
+private let dateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .short
+    return formatter
+}()
 
 struct LocationDetailsValues {
     static let textViewCellIdentifier = "textViewCell"
@@ -15,10 +23,21 @@ struct LocationDetailsValues {
     static let addressCellIdentifier = "addressCell"
     static let dateCellIdentifier = "dateCell"
     static let addPhotoCellIdentifier = "addPhotoCell"
+    
+    static let descriptionTextViewHeight: CGFloat = 88
+    static let descriptionTextViewHeader = "Description"
+    
+    static let descriptionSectionID = 0
+    static let photoSectionID = 1
+    static let coordinatesSectionID = 2
 }
 
 class LocationDetailsViewController: UITableViewController {
 
+    var coordinate = CLLocationCoordinate2D(latitude: 0, longitude: 0)
+    var placemark: CLPlacemark?
+    var categoryName = "No Category"
+    
     // UI Elements
     private var descriptionTextView: UITextView!
     
@@ -64,7 +83,6 @@ class LocationDetailsViewController: UITableViewController {
     // MARK: - Configuration methods
     
     private func configureDataSource() {
-        self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: LocationDetailsValues.textViewCellIdentifier)
         self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: LocationDetailsValues.categoryCellIdentifier)
         self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: LocationDetailsValues.latitudeCellIdentifier)
@@ -83,11 +101,15 @@ class LocationDetailsViewController: UITableViewController {
         configureAddressLabel()
         configureDateLabel()
         configureNavigationUI()
+        
+//        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(hideKeyboard))
+//        tableView.addGestureRecognizer(gestureRecognizer)
     }
     
     private func configureDescriptionTextView() {
         descriptionTextView = UITextView()
         descriptionTextView.text = "(Description goes here)"
+        descriptionTextView.backgroundColor = .clear
         descriptionTextView.translatesAutoresizingMaskIntoConstraints = false
     }
     
@@ -97,7 +119,7 @@ class LocationDetailsViewController: UITableViewController {
         categoryLabel.translatesAutoresizingMaskIntoConstraints = false
         
         categoryValueLabel = UILabel()
-        categoryValueLabel.text = "Detail"
+        categoryValueLabel.text = categoryName
         categoryValueLabel.translatesAutoresizingMaskIntoConstraints = false
     }
     
@@ -113,7 +135,7 @@ class LocationDetailsViewController: UITableViewController {
         latitudeLabel.translatesAutoresizingMaskIntoConstraints = false
         
         latitudeValueLabel = UILabel()
-        latitudeValueLabel.text = "Detail"
+        latitudeValueLabel.text = String(format: "%.8f", coordinate.latitude)
         latitudeValueLabel.translatesAutoresizingMaskIntoConstraints = false
     }
     
@@ -123,17 +145,22 @@ class LocationDetailsViewController: UITableViewController {
         longitudeLabel.translatesAutoresizingMaskIntoConstraints = false
         
         longitudeValueLabel = UILabel()
-        longitudeValueLabel.text = "Detail"
+        longitudeValueLabel.text = String(format: "%.8f", coordinate.longitude)
         longitudeValueLabel.translatesAutoresizingMaskIntoConstraints = false
     }
     
     private func configureAddressLabel() {
         addressLabel = UILabel()
         addressLabel.text = "Address"
+        addressLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         addressLabel.translatesAutoresizingMaskIntoConstraints = false
         
         addressValueLabel = UILabel()
-        addressValueLabel.text = "Detail"
+        addressValueLabel.text = self.string(from: placemark)
+        addressValueLabel.textAlignment = .right
+        addressValueLabel.numberOfLines = 0
+        addressValueLabel.lineBreakMode = .byWordWrapping
+        addressValueLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         addressValueLabel.translatesAutoresizingMaskIntoConstraints = false
     }
     
@@ -143,7 +170,7 @@ class LocationDetailsViewController: UITableViewController {
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
         
         dateValueLabel = UILabel()
-        dateValueLabel.text = "Detail"
+        dateValueLabel.text = self.format(date: Date())
         dateValueLabel.translatesAutoresizingMaskIntoConstraints = false
     }
     
@@ -156,12 +183,28 @@ class LocationDetailsViewController: UITableViewController {
     // MARK: - Actions
     
     @objc private func done() {
-        navigationController?.popViewController(animated: true)
+        let hudView = HudView.hud(animated: true)
+        hudView.text = "Tagged"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            hudView.hide()
+            self.navigationController?.popViewController(animated: true)
+        }
+        //navigationController?.popViewController(animated: true)
     }
     
     @objc private func cancel() {
         navigationController?.popViewController(animated: true)
     }
+    
+    
+//    @objc private func hideKeyboard(_ gestureRecognizer: UIGestureRecognizer) {
+//        let point = gestureRecognizer.location(in: tableView)
+//        let indexPath = tableView.indexPathForRow(at: point)
+//        if indexPath != nil && indexPath!.section == 0 && indexPath!.row == 0 {
+//            return
+//        }
+//        descriptionTextView.resignFirstResponder()
+//    }
 
     // MARK: - Table view data source
 
@@ -173,11 +216,11 @@ class LocationDetailsViewController: UITableViewController {
     //Number of rows
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
-        case 0:
+        case LocationDetailsValues.descriptionSectionID:
             return 2
-        case 1:
+        case LocationDetailsValues.photoSectionID:
             return 1
-        case 2:
+        case LocationDetailsValues.coordinatesSectionID:
             return 4
         default:
             break
@@ -185,10 +228,10 @@ class LocationDetailsViewController: UITableViewController {
         return 1
     }
 
-    //Cell template
+    //Cell for index path
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
-        case 0:
+        case LocationDetailsValues.descriptionSectionID:
             switch indexPath.row {
             case 0:
                 return textViewCell(tableView, indexPath)
@@ -197,9 +240,9 @@ class LocationDetailsViewController: UITableViewController {
             default:
                 break
             }
-        case 1:
+        case LocationDetailsValues.photoSectionID:
             return addPhotoCell(tableView, indexPath)
-        case 2:
+        case LocationDetailsValues.coordinatesSectionID:
             switch indexPath.row {
             case 0:
                 return latitudeCell(tableView, indexPath)
@@ -223,10 +266,27 @@ class LocationDetailsViewController: UITableViewController {
     
     //Cell selection
     override func tableView(_ tableView: UITableView, willSelectRowAt indexPath: IndexPath) -> IndexPath? {
-        if indexPath.section == 1 || indexPath.section == 0 && indexPath.row == 1 {
+        if indexPath.section == LocationDetailsValues.photoSectionID
+            || indexPath.section == LocationDetailsValues.descriptionSectionID {
             return indexPath
         }
         return nil
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if indexPath.section == LocationDetailsValues.descriptionSectionID {
+            if indexPath.row == 0 {
+                descriptionTextView.becomeFirstResponder()
+            } else {
+                descriptionTextView.resignFirstResponder()
+                if indexPath.row == 1 {
+                    let categoryPickerVC = CategoryPickerViewController()
+                    categoryPickerVC.selectedCategoryName = categoryName
+                    categoryPickerVC.delegate = self
+                    navigationController?.pushViewController(categoryPickerVC, animated: true)
+                }
+            }
+        }
     }
     
     // MARK: - Cell templates
@@ -248,14 +308,14 @@ class LocationDetailsViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         if indexPath.section == 0 && indexPath.row == 0 {
-            return 88.0
+            return LocationDetailsValues.descriptionTextViewHeight
         }
         return UITableView.automaticDimension
     }
     
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         if section == 0 {
-            return "Description"
+            return LocationDetailsValues.descriptionTextViewHeader
         }
         return nil
     }
@@ -341,15 +401,19 @@ class LocationDetailsViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: LocationDetailsValues.addressCellIdentifier, for: indexPath)
         let contentView = cell.contentView
         
-        contentView.addSubview(addressLabel)
-        contentView.addSubview(addressValueLabel)
+        let stack = UIStackView(arrangedSubviews: [addressLabel, addressValueLabel])
+        stack.axis = .horizontal
+        stack.alignment = .fill
+        stack.distribution = .equalSpacing
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        
+        contentView.addSubview(stack)
         
         NSLayoutConstraint.activate([
-            addressLabel.centerYAnchor.constraint(equalTo: contentView.layoutMarginsGuide.centerYAnchor),
-            addressLabel.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
-    
-            addressValueLabel.centerYAnchor.constraint(equalTo: contentView.layoutMarginsGuide.centerYAnchor),
-            addressValueLabel.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
+            stack.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
+            stack.topAnchor.constraint(equalTo: contentView.layoutMarginsGuide.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: contentView.layoutMarginsGuide.bottomAnchor)
         ])
         
         return cell
@@ -372,6 +436,45 @@ class LocationDetailsViewController: UITableViewController {
         ])
         
         return cell
+    }
+    
+    // MARK: - Helper methods
+    
+    private func string(from placemark: CLPlacemark?) -> String {
+        var text = ""
+        if let placemark = placemark {
+            if let s = placemark.subThoroughfare {
+                text += s + " "
+            }
+            if let s = placemark.thoroughfare {
+                text += s + ", "
+            }
+            if let s = placemark.locality {
+                text += s + ", "
+            }
+            if let s = placemark.administrativeArea {
+                text += s + " "
+            }
+            if let s = placemark.postalCode {
+                text += s + ", "
+            }
+            if let s = placemark.country {
+                text += s
+            }
+        }
+        return text
+    }
+    
+    func format(date: Date) -> String {
+        return dateFormatter.string(from: date)
+    }
+}
+
+extension LocationDetailsViewController: CategoryPickerProtocol {
+    func didSelectCategory(_ categoryName: String) {
+        self.categoryName = categoryName
+        categoryValueLabel.text = categoryName
+        navigationController?.popViewController(animated: true)
     }
 }
 
