@@ -7,8 +7,11 @@
 
 import UIKit
 import CoreLocation
+import CoreData
 
 class CurrentLocationViewController: UIViewController {
+    
+    var managedObjectContext: NSManagedObjectContext!
     
     private let locationManager = CLLocationManager()
     private var location: CLLocation?
@@ -66,7 +69,6 @@ class CurrentLocationViewController: UIViewController {
     // MARK: - Configuration
 
     private func setupUI() {
-        //safeAreaViewConfiguration()
         
         viewControllerConfiguration()
         
@@ -82,25 +84,10 @@ class CurrentLocationViewController: UIViewController {
         tabBarItem.title = "Tag"
     }
     
-    private func safeAreaViewConfiguration() {
-        let safeArea = UIView()
-        safeArea.backgroundColor = .lightGray
-        safeArea.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(safeArea)
-        NSLayoutConstraint.activate([
-            safeArea.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            safeArea.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            safeArea.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            safeArea.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor)
-        ])
-    }
-    
     private func messageLabelConfiguration() {
         messageLabel = UILabel()
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
         messageLabel.text = "(Message Label)"
-        
-        //messageLabel.backgroundColor = .yellow
         
         view.addSubview(messageLabel)
         
@@ -119,8 +106,6 @@ class CurrentLocationViewController: UIViewController {
         latitudeStack = UIStackView(arrangedSubviews: [latitudeLabel, latitudeValueLabel])
         latitudeStack.axis = .horizontal
         latitudeStack.translatesAutoresizingMaskIntoConstraints = false
-
-        //latitudeStack.backgroundColor = .yellow
         
         view.addSubview(latitudeStack)
         
@@ -140,8 +125,6 @@ class CurrentLocationViewController: UIViewController {
         longitudeStack = UIStackView(arrangedSubviews: [longitudeLabel, longitudeValueLabel])
         longitudeStack.axis = .horizontal
         longitudeStack.translatesAutoresizingMaskIntoConstraints = false
-
-        //longitudeStack.backgroundColor = .yellow
         
         view.addSubview(longitudeStack)
         
@@ -157,8 +140,6 @@ class CurrentLocationViewController: UIViewController {
         addressLabel.text = "(Address goes here)"
         addressLabel.translatesAutoresizingMaskIntoConstraints = false
         
-        //addressLabel.backgroundColor = .yellow
-        
         view.addSubview(addressLabel)
         
         NSLayoutConstraint.activate([
@@ -172,7 +153,6 @@ class CurrentLocationViewController: UIViewController {
         tagButton.setTitle("Tag Location", for: .normal)
         tagButton.translatesAutoresizingMaskIntoConstraints = false
         
-        //tagButton.backgroundColor = .yellow
         tagButton.addTarget(self, action: #selector(goToTagLocation), for: .touchUpInside)
         
         view.addSubview(tagButton)
@@ -189,8 +169,6 @@ class CurrentLocationViewController: UIViewController {
         getButton.addTarget(self, action: #selector(getLocation), for: .touchUpInside)
         
         getButtonTitleConfiguration()
-        
-        //getButton.backgroundColor = .yellow
         
         view.addSubview(getButton)
         
@@ -238,6 +216,7 @@ class CurrentLocationViewController: UIViewController {
         let locationDetailsVC = LocationDetailsViewController()
         locationDetailsVC.coordinate = location!.coordinate
         locationDetailsVC.placemark = placemark
+        locationDetailsVC.managedObjectContext = self.managedObjectContext
         navigationController?.pushViewController(locationDetailsVC, animated: true)
     }
     

@@ -7,6 +7,7 @@
 
 import UIKit
 import CoreLocation
+import CoreData
 
 private let dateFormatter: DateFormatter = {
     let formatter = DateFormatter()
@@ -34,9 +35,12 @@ struct LocationDetailsValues {
 
 class LocationDetailsViewController: UITableViewController {
 
+    var managedObjectContext: NSManagedObjectContext!
+    
     var coordinate = CLLocationCoordinate2D(latitude: 0, longitude: 0)
     var placemark: CLPlacemark?
     var categoryName = "No Category"
+    private let date = Date()
     
     // UI Elements
     private var descriptionTextView: UITextView!
@@ -170,7 +174,7 @@ class LocationDetailsViewController: UITableViewController {
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
         
         dateValueLabel = UILabel()
-        dateValueLabel.text = self.format(date: Date())
+        dateValueLabel.text = self.format(date: date)
         dateValueLabel.translatesAutoresizingMaskIntoConstraints = false
     }
     
@@ -183,13 +187,31 @@ class LocationDetailsViewController: UITableViewController {
     // MARK: - Actions
     
     @objc private func done() {
-        let hudView = HudView.hud(animated: true)
-        hudView.text = "Tagged"
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            hudView.hide()
-            self.navigationController?.popViewController(animated: true)
+//        let hudView = HudView.hud(animated: true)
+//        hudView.text = "Tagged"
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+//            hudView.hide()
+//            self.navigationController?.popViewController(animated: true)
+//        }
+        let location = Location(context: managedObjectContext)
+        location.latitude = coordinate.latitude
+        location.longitude = coordinate.longitude
+        location.date = date
+        location.locationDescription = descriptionTextView.text
+        location.category = categoryName
+        location.placemark = placemark
+        
+        do {
+            try managedObjectContext.save()
+            let hudView = HudView.hud(animated: true)
+            hudView.text = "Tagged"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                hudView.hide()
+                self.navigationController?.popViewController(animated: true)
+            }
+        } catch {
+            fatalCoreDataError(error)
         }
-        //navigationController?.popViewController(animated: true)
     }
     
     @objc private func cancel() {
