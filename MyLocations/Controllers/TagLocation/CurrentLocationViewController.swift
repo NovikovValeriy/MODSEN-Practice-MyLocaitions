@@ -69,19 +69,12 @@ class CurrentLocationViewController: UIViewController {
     // MARK: - Configuration
 
     private func setupUI() {
-        
-        viewControllerConfiguration()
-        
         messageLabelConfiguration()
         latitudeLabelsConfiguration()
         longitudeLabelsConfiguration()
         addressLabelConfiguration()
         tagButtonConfiguration()
         getButtonConfiguration()
-    }
-    
-    private func viewControllerConfiguration() {
-        tabBarItem.title = "Tag"
     }
     
     private func messageLabelConfiguration() {

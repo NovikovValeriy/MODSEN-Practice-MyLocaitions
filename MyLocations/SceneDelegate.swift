@@ -17,10 +17,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let window = UIWindow(windowScene: windowScene)
         
-        let rootVC = CurrentLocationViewController()
-        let rootNavigationVC = UINavigationController(rootViewController: rootVC)
+        let tagVC = CurrentLocationViewController()
+        let tagNavigationVC = UINavigationController(rootViewController: tagVC)
+        tagNavigationVC.tabBarItem.title = "Tag"
+        
+        let locationsVC = LocationsViewController()
+        let locationsNavigationVC = UINavigationController(rootViewController: locationsVC)
+        locationsNavigationVC.tabBarItem.title = "Locations"
+        
         let tabBarController = UITabBarController()
-        tabBarController.setViewControllers([rootNavigationVC], animated: false)
+        tabBarController.setViewControllers([tagNavigationVC, locationsNavigationVC], animated: false)
         
         window.rootViewController = tabBarController
         window.makeKeyAndVisible()
