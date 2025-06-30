@@ -17,6 +17,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let window = UIWindow(windowScene: windowScene)
         
+        //Controllers setup
         let tagVC = CurrentLocationViewController()
         let tagNavigationVC = UINavigationController(rootViewController: tagVC)
         tagNavigationVC.tabBarItem.title = "Tag"
@@ -33,13 +34,24 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         self.window = window
         
-        guard let tabBarController = (scene as? UIWindowScene)?.windows.first?.rootViewController as? UITabBarController,
-                let navController = tabBarController.viewControllers?.first as? UINavigationController,
-              let controller = navController.viewControllers.first as? CurrentLocationViewController else {
-            fatalError("Unable to find expected view controllers")
+        //Core Data object context
+        if let tabBarViewControllers = tabBarController.viewControllers {
+            var navController = tabBarViewControllers[0] as! UINavigationController
+            let controller1 = navController.topViewController as! CurrentLocationViewController
+            controller1.managedObjectContext = managedObjectContext
+            navController = tabBarViewControllers[1] as! UINavigationController
+            let controller2 = navController.topViewController as! LocationsViewController
+            controller2.managedObjectContext = managedObjectContext
         }
-        controller.managedObjectContext = managedObjectContext
+//        guard let tabBarController = (scene as? UIWindowScene)?.windows.first?.rootViewController as? UITabBarController,
+//                let navController = tabBarController.viewControllers?.first as? UINavigationController,
+//              let controller = navController.viewControllers.first as? CurrentLocationViewController else {
+//            fatalError("Unable to find expected view controllers")
+//        }
+//        controller.managedObjectContext = managedObjectContext
         
+        
+        //Notification observer
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleDataSaveFailedNotification),

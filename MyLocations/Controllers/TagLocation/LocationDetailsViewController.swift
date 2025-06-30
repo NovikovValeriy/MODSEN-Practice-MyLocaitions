@@ -37,6 +37,15 @@ class LocationDetailsViewController: UITableViewController {
 
     var managedObjectContext: NSManagedObjectContext!
     
+    var locationToEdit: Location? {
+        didSet {
+            if let location = locationToEdit {
+                descriptionText = location.locationDescription
+            }
+        }
+    }
+    var descriptionText = ""
+    
     var coordinate = CLLocationCoordinate2D(latitude: 0, longitude: 0)
     var placemark: CLPlacemark?
     var categoryName = "No Category"
@@ -111,8 +120,11 @@ class LocationDetailsViewController: UITableViewController {
     }
     
     private func configureDescriptionTextView() {
+        if let location = locationToEdit {
+            descriptionText = location.locationDescription
+        }
         descriptionTextView = UITextView()
-        descriptionTextView.text = "(Description goes here)"
+        descriptionTextView.text = descriptionText
         descriptionTextView.backgroundColor = .clear
         descriptionTextView.translatesAutoresizingMaskIntoConstraints = false
     }
@@ -179,7 +191,11 @@ class LocationDetailsViewController: UITableViewController {
     }
     
     private func configureNavigationUI() {
-        title = "Tag Location"
+        if locationToEdit != nil {
+            title = "Edit Location"
+        } else {
+            title = "Tag Location"
+        }
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancel))
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(done))
     }
@@ -187,13 +203,15 @@ class LocationDetailsViewController: UITableViewController {
     // MARK: - Actions
     
     @objc private func done() {
-//        let hudView = HudView.hud(animated: true)
-//        hudView.text = "Tagged"
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-//            hudView.hide()
-//            self.navigationController?.popViewController(animated: true)
-//        }
-        let location = Location(context: managedObjectContext)
+        let hudView = HudView.hud(animated: true)
+        let location: Location
+        if let temp = locationToEdit {
+            hudView.text = "Updated"
+            location = temp
+        } else {
+            hudView.text = "Tagged"
+            location = Location(context: managedObjectContext)
+        }
         location.latitude = coordinate.latitude
         location.longitude = coordinate.longitude
         location.date = date
@@ -203,8 +221,6 @@ class LocationDetailsViewController: UITableViewController {
         
         do {
             try managedObjectContext.save()
-            let hudView = HudView.hud(animated: true)
-            hudView.text = "Tagged"
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 hudView.hide()
                 self.navigationController?.popViewController(animated: true)
