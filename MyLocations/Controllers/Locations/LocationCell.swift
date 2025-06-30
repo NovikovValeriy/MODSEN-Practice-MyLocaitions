@@ -17,7 +17,7 @@ struct LocationCellValues {
     
     static let addressLabelFont: UIFont = .systemFont(ofSize: 14)
     static let addressLabelText = "Address"
-    static let addressLabelTextColor: UIColor = .black.withAlphaComponent(0.5)
+    static let addressLabelTextColor: UIColor = .secondaryLabel
     static let addressTopPadding: CGFloat = 4
     static let addressBottomPadding: CGFloat = 8
     
@@ -55,6 +55,7 @@ class LocationCell: UITableViewCell {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
         imageView.clipsToBounds = true
+        imageView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
@@ -71,15 +72,19 @@ class LocationCell: UITableViewCell {
     
     // MARK: - Setup
     private func setupUI() {
+        contentView.addSubview(photoImageView)
         contentView.addSubview(descriptionLabel)
         contentView.addSubview(addressLabel)
         
         NSLayoutConstraint.activate([
-            descriptionLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: LocationCellValues.sidesPadding),
+            photoImageView.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
+            photoImageView.centerYAnchor.constraint(equalTo: contentView.layoutMarginsGuide.centerYAnchor),
+            
+            descriptionLabel.leadingAnchor.constraint(equalTo: photoImageView.trailingAnchor, constant: LocationCellValues.sidesPadding),
             descriptionLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -LocationCellValues.sidesPadding),
             descriptionLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: LocationCellValues.descriptionTopPadding),
             
-            addressLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: LocationCellValues.sidesPadding),
+            addressLabel.leadingAnchor.constraint(equalTo: photoImageView.trailingAnchor, constant: LocationCellValues.sidesPadding),
             addressLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -LocationCellValues.sidesPadding),
             addressLabel.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: LocationCellValues.addressTopPadding),
             addressLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -LocationCellValues.addressBottomPadding)

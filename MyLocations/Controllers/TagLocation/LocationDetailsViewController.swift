@@ -89,6 +89,7 @@ class LocationDetailsViewController: UITableViewController {
     
     private var imageView: UIImageView!
     private var addPhotoLabel: UILabel!
+    private var photoConstraint: NSLayoutConstraint!
     
     private var latitudeLabel: UILabel!
     private var latitudeValueLabel: UILabel!
@@ -196,6 +197,8 @@ class LocationDetailsViewController: UITableViewController {
         imageView.contentMode = .scaleAspectFit
         imageView.clipsToBounds = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        photoConstraint = imageView.heightAnchor.constraint(equalToConstant: 44)
     }
     
     private func configureLatitudeLabel() {
@@ -572,6 +575,7 @@ class LocationDetailsViewController: UITableViewController {
         imageView.image = image
         imageView.isHidden = false
         addPhotoLabel.text = ""
+        photoConstraint.constant = 260
         tableView.reloadData()
     }
     

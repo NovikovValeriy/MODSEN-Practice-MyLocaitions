@@ -8,7 +8,7 @@
 import UIKit
 
 struct HudViewValues {
-    static let imageName = "Checkmark"
+    static let imageName = "CustomCheckmark"
 }
 
 class HudView: UIView {
