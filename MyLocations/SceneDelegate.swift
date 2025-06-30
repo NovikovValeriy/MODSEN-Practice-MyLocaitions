@@ -17,7 +17,22 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let window = UIWindow(windowScene: windowScene)
         
-        //Controllers setup
+        let tabBarController = tabBarControllerSetup()
+        window.rootViewController = tabBarController
+        window.makeKeyAndVisible()
+        
+        self.window = window
+        
+        coreDataContextSetup(tabBarController)
+        
+        notificationObserverSetup()
+    }
+    
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        self.saveContext()
+    }
+    
+    private func tabBarControllerSetup() -> UITabBarController {
         let tagVC = CurrentLocationViewController()
         let tagNavigationVC = UINavigationController(rootViewController: tagVC)
         tagNavigationVC.tabBarItem.title = "Tag"
@@ -26,32 +41,32 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let locationsNavigationVC = UINavigationController(rootViewController: locationsVC)
         locationsNavigationVC.tabBarItem.title = "Locations"
         
+        let mapVC = MapViewController()
+        let mapNavigationVC = UINavigationController(rootViewController: mapVC)
+        mapNavigationVC.tabBarItem.title = "Map"
+        
         let tabBarController = UITabBarController()
-        tabBarController.setViewControllers([tagNavigationVC, locationsNavigationVC], animated: false)
+        tabBarController.setViewControllers([tagNavigationVC, locationsNavigationVC, mapNavigationVC], animated: false)
+        return tabBarController
+    }
+    
+    private func coreDataContextSetup(_ tabBarController: UITabBarController) {
+        guard let tabBarViewControllers = tabBarController.viewControllers else { return }
         
-        window.rootViewController = tabBarController
-        window.makeKeyAndVisible()
+        var navController = tabBarViewControllers[0] as! UINavigationController
+        let controller1 = navController.topViewController as! CurrentLocationViewController
+        controller1.managedObjectContext = managedObjectContext
         
-        self.window = window
+        navController = tabBarViewControllers[1] as! UINavigationController
+        let controller2 = navController.topViewController as! LocationsViewController
+        controller2.managedObjectContext = managedObjectContext
         
-        //Core Data object context
-        if let tabBarViewControllers = tabBarController.viewControllers {
-            var navController = tabBarViewControllers[0] as! UINavigationController
-            let controller1 = navController.topViewController as! CurrentLocationViewController
-            controller1.managedObjectContext = managedObjectContext
-            navController = tabBarViewControllers[1] as! UINavigationController
-            let controller2 = navController.topViewController as! LocationsViewController
-            controller2.managedObjectContext = managedObjectContext
-        }
-//        guard let tabBarController = (scene as? UIWindowScene)?.windows.first?.rootViewController as? UITabBarController,
-//                let navController = tabBarController.viewControllers?.first as? UINavigationController,
-//              let controller = navController.viewControllers.first as? CurrentLocationViewController else {
-//            fatalError("Unable to find expected view controllers")
-//        }
-//        controller.managedObjectContext = managedObjectContext
-        
-        
-        //Notification observer
+        navController = tabBarViewControllers[2] as! UINavigationController
+        let controller3 = navController.topViewController as! MapViewController
+        controller3.managedObjectContext = managedObjectContext
+    }
+    
+    private func notificationObserverSetup() {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleDataSaveFailedNotification),
@@ -60,21 +75,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         )
     }
     
-    func sceneDidEnterBackground(_ scene: UIScene) {
-        self.saveContext()
-    }
-    
     @objc func handleDataSaveFailedNotification() {
         let message = """
 There was an error saving your data.
 Please contact support at support@example.com and let us know what you were doing when this error occurred.
 The app will now close.
 """
-        let alert = UIAlertController(title: "Error", message: message,
-                                        preferredStyle: .alert)
+        let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-            let exception = NSException(name: NSExceptionName.genericException,
-                                          reason: "Core Data save failed", userInfo: nil)
+            let exception = NSException(name: NSExceptionName.genericException, reason: "Core Data save failed", userInfo: nil)
             exception.raise()
         }))
         window?.rootViewController?.present(alert, animated: true, completion: nil)
@@ -84,26 +93,9 @@ The app will now close.
     // MARK: - Core Data stack
 
     lazy var persistentContainer: NSPersistentContainer = {
-        /*
-         The persistent container for the application. This implementation
-         creates and returns a container, having loaded the store for the
-         application to it. This property is optional since there are legitimate
-         error conditions that could cause the creation of the store to fail.
-        */
         let container = NSPersistentContainer(name: "MyLocations")
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                 
-                /*
-                 Typical reasons for an error here include:
-                 * The parent directory does not exist, cannot be created, or disallows writing.
-                 * The persistent store is not accessible, due to permissions or data protection when the device is locked.
-                 * The device is out of space.
-                 * The store could not be migrated to the current model version.
-                 Check the error message to determine what the actual problem was.
-                 */
                 fatalError("Unresolved error \(error), \(error.userInfo)")
             }
         })
@@ -122,8 +114,6 @@ The app will now close.
             do {
                 try context.save()
             } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
                 let nserror = error as NSError
                 fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
             }
