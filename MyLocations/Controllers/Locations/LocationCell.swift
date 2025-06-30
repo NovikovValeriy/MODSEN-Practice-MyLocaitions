@@ -22,6 +22,12 @@ struct LocationCellValues {
     static let addressBottomPadding: CGFloat = 8
     
     static let sidesPadding: CGFloat = 16
+    
+    static let noDescriptionText = "(No Description)"
+    
+    static let noPhotoName = "No Photo"
+    
+    static let thumbnailSize: CGFloat = 52
 }
 
 class LocationCell: UITableViewCell {
@@ -43,6 +49,14 @@ class LocationCell: UITableViewCell {
         label.text = LocationCellValues.addressLabelText
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
+    }()
+    
+    let photoImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
     }()
     
     // MARK: - Initialization
@@ -75,21 +89,27 @@ class LocationCell: UITableViewCell {
     // MARK: - Configuration
     func configure(for location: Location) {
         if location.locationDescription.isEmpty {
-            descriptionLabel.text = "(No Description)"
+            descriptionLabel.text = LocationCellValues.noDescriptionText
         } else {
             descriptionLabel.text = location.locationDescription
         }
+
         if let placemark = location.placemark {
             var text = ""
-            if let thoroughfare = placemark.thoroughfare {
-                text += thoroughfare + ", "
-            }
-            if let locality = placemark.locality {
-                text += locality
-            }
+            text.add(text: placemark.subThoroughfare)
+            text.add(text: placemark.thoroughfare, separatedBy: " ")
+            text.add(text: placemark.locality, separatedBy: ", ")
             addressLabel.text = text
         } else {
             addressLabel.text = String(format: "Lat: %.8f, Long: %.8f", location.latitude, location.longitude)
         }
+        photoImageView.image = thumbnail(for: location)
+    }
+    
+    func thumbnail(for location: Location) -> UIImage {
+        if location.hasPhoto, let image = location.photoImage {
+            return image.resized(withBounds: CGSize(width: LocationCellValues.thumbnailSize, height: LocationCellValues.thumbnailSize))
+        }
+        return UIImage(named: LocationCellValues.noPhotoName)!
     }
 }

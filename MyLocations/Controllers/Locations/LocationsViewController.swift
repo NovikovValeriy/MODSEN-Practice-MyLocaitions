@@ -7,15 +7,19 @@
 
 import UIKit
 import CoreData
+import CoreLocation
 
 struct LocationsValues {
-    static let tabBarItemTitle = "Locations"
-    static let navigationTitle = "Locations"
+    static let title = "Locations"
     
     static let cellIdentifier = "LocationsCell"
     
     static let descriptionLabelText = "Fake description"
     static let addressLabelText = "Fake address"
+    
+    static let categoryKey = "category"
+    static let dateKey = "date"
+    static let cacheName = "Locations"
 }
 
 class LocationsViewController: UITableViewController {
@@ -24,18 +28,23 @@ class LocationsViewController: UITableViewController {
     
     lazy var fetchedResultsController: NSFetchedResultsController<Location> = {
         let fetchRequest = NSFetchRequest<Location>()
+        
         let entity = Location.entity()
         fetchRequest.entity = entity
-        let sortDescriptor1 = NSSortDescriptor(key: "category", ascending: true)
-        let sortDescriptor2 = NSSortDescriptor(key: "date", ascending: true)
+        
+        let sortDescriptor1 = NSSortDescriptor(key: LocationsValues.categoryKey, ascending: true)
+        let sortDescriptor2 = NSSortDescriptor(key: LocationsValues.dateKey, ascending: true)
         fetchRequest.sortDescriptors = [sortDescriptor1, sortDescriptor2]
+        
         fetchRequest.fetchBatchSize = 20
+        
         let fetchedResultsController = NSFetchedResultsController(
             fetchRequest: fetchRequest,
             managedObjectContext: self.managedObjectContext,
-            sectionNameKeyPath: "category",
-            cacheName: "Locations"
+            sectionNameKeyPath: LocationsValues.categoryKey,
+            cacheName: LocationsValues.cacheName
         )
+        
         fetchedResultsController.delegate = self
         return fetchedResultsController
     }()
@@ -65,8 +74,9 @@ class LocationsViewController: UITableViewController {
     }
     
     private func viewControllerConfiguration() {
-        navigationController?.tabBarItem.title = LocationsValues.tabBarItemTitle
-        title = LocationsValues.navigationTitle
+        navigationController?.tabBarItem.title = LocationsValues.title
+        title = LocationsValues.title
+        navigationItem.rightBarButtonItem = editButtonItem
     }
     
     
@@ -76,7 +86,7 @@ class LocationsViewController: UITableViewController {
         do {
             try fetchedResultsController.performFetch()
         } catch {
-            fatalError("Failed to fetch locations: \(error.localizedDescription)")
+            fatalCoreDataError(error)
         }
     }
     
@@ -119,7 +129,7 @@ class LocationsViewController: UITableViewController {
             do {
                 try managedObjectContext.save()
             } catch {
-                fatalError("Error deleting location: \(error)")
+                fatalCoreDataError(error)
             }
         }
     }
@@ -127,49 +137,45 @@ class LocationsViewController: UITableViewController {
 
 extension LocationsViewController: NSFetchedResultsControllerDelegate {
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        print("*** controllerWillChangeContent")
         tableView.beginUpdates()
     }
     
-    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange _: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         switch type {
         case .insert:
-            print("*** NSFetchedResultsChangeInsert(object)")
             tableView.insertRows(at: [newIndexPath!], with: .fade)
         case .delete:
-            print("*** NSFetchedResultsChangeDelete(object)")
             tableView.deleteRows(at: [indexPath!], with: .fade)
         case .update:
-            print("*** NSFetchedResultsChangeUpdate(object)")
             if let cell = tableView.cellForRow(at: indexPath!) as? LocationCell
             {
                 let location = controller.object(at: indexPath!) as! Location
                 cell.configure(for: location)
             }
         case .move:
-            print("*** NSFetche dResultsChangeMove(object)")
             tableView.deleteRows(at: [indexPath!], with: .fade)
             tableView.insertRows(at: [newIndexPath!], with: .fade)
         @unknown default:
-            print("*** NSFetchedResultsunknowntype")
+            break
         }
     }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
         switch type {
         case .insert:
-            print("*** NSFetchedResultsChangeInsert(section)")
             tableView.insertSections(IndexSet(integer: sectionIndex), with: .fade)
         case .delete:
-            print("*** NSFetchedResultsChangeDelete(section)")
             tableView.deleteSections(IndexSet(integer: sectionIndex), with: .fade)
-        default:
+        case .move:
+            break
+        case .update:
+            break
+        @unknown default:
             break
         }
     }
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        print("*** controllerDidChangeContent")
         tableView.endUpdates()
     }
 }

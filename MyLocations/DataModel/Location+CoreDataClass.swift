@@ -10,6 +10,12 @@ import Foundation
 import CoreData
 import MapKit
 
+struct LocationValues {
+    static let noPhotoIDSet = "No photo ID set"
+    static let photoID = "PhotoID"
+    static let noDescriptionText = "(No Description)"
+}
+
 @objc(Location)
 public class Location: NSManagedObject, MKAnnotation {
     
@@ -18,7 +24,7 @@ public class Location: NSManagedObject, MKAnnotation {
     }
     
     var photoURL: URL {
-        assert(photoID != nil, "No photo ID set")
+        assert(photoID != nil, LocationValues.noPhotoIDSet)
         let filename = "Photo-\(photoID!.intValue).jpg"
         return applicationDocumentsDirectory.appendingPathComponent(filename)
     }
@@ -29,8 +35,8 @@ public class Location: NSManagedObject, MKAnnotation {
     
     class func nextPhotoID() -> Int {
         let userDefaults = UserDefaults.standard
-        let currentID = userDefaults.integer(forKey: "PhotoID") + 1
-        userDefaults.set(currentID, forKey: "PhotoID")
+        let currentID = userDefaults.integer(forKey: LocationValues.photoID) + 1
+        userDefaults.set(currentID, forKey: LocationValues.photoID)
         return currentID
     }
     
@@ -49,7 +55,11 @@ public class Location: NSManagedObject, MKAnnotation {
     }
     
     public var title: String? {
-        return locationDescription
+        if locationDescription.isEmpty {
+            return LocationValues.noDescriptionText
+        } else {
+            return locationDescription
+        }
     }
     
     public var subtitle: String? {

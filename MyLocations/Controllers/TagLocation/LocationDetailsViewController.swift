@@ -17,6 +17,8 @@ private let dateFormatter: DateFormatter = {
 }()
 
 struct LocationDetailsValues {
+    static let titleText = "Edit Location"
+    
     static let textViewCellIdentifier = "textViewCell"
     static let categoryCellIdentifier = "categoryCell"
     static let latitudeCellIdentifier = "latitudeCell"
@@ -31,11 +33,31 @@ struct LocationDetailsValues {
     static let descriptionSectionID = 0
     static let photoSectionID = 1
     static let coordinatesSectionID = 2
+    
+    static let noCategoryText = "No Category"
+    
+    static let categoryLabelText = "Category"
+    static let addPhotoLabelText = "Add Photo"
+    static let latitudeLabelText = "Latitude"
+    static let longitudeLabelText = "Longitude"
+    static let addressLabelText = "Address"
+    static let noAddressFoundText = "No Address Found"
+    static let dateLabelText = "Date"
+    
+    static let editLocationTitle = "Edit Location"
+    static let tagLocationTitle = "Tag Location"
+    
+    static let updatedHudViewText = "Updated"
+    static let taggedHudViewText = "Tagged"
+    
+    static let imageViewCompressedHeightConstant: CGFloat = 44
+    
+    static let photoCancelTitle = "Cancel"
+    static let photoTakePhotoTitle = "Take Photo"
+    static let photoChoosePhotoTitle = "Choose From Library"
 }
 
 class LocationDetailsViewController: UITableViewController {
-
-    var managedObjectContext: NSManagedObjectContext!
     
     var locationToEdit: Location? {
         didSet {
@@ -48,11 +70,13 @@ class LocationDetailsViewController: UITableViewController {
             }
         }
     }
+    
+    var managedObjectContext: NSManagedObjectContext!
     var descriptionText = ""
     
     var coordinate = CLLocationCoordinate2D(latitude: 0, longitude: 0)
     var placemark: CLPlacemark?
-    var categoryName = "No Category"
+    var categoryName = LocationDetailsValues.noCategoryText
     var image: UIImage?
     var date = Date()
     var observer: Any!
@@ -96,19 +120,19 @@ class LocationDetailsViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        
+        listenForBackgroundNotification()
+        
+        configureDataSource()
+        setupUI()
         if let location = locationToEdit {
-            title = "Edit Location"
+            title = LocationDetailsValues.titleText
             if location.hasPhoto {
                 if let theImage = location.photoImage {
                     show(image: theImage)
                 }
             }
         }
-        
-        listenForBackgroundNotification()
-        
-        configureDataSource()
-        setupUI()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -138,9 +162,6 @@ class LocationDetailsViewController: UITableViewController {
         configureAddressLabel()
         configureDateLabel()
         configureNavigationUI()
-        
-//        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(hideKeyboard))
-//        tableView.addGestureRecognizer(gestureRecognizer)
     }
     
     private func configureDescriptionTextView() {
@@ -155,7 +176,7 @@ class LocationDetailsViewController: UITableViewController {
     
     private func configureCategoryLabel() {
         categoryLabel = UILabel()
-        categoryLabel.text = "Category"
+        categoryLabel.text = LocationDetailsValues.categoryLabelText
         categoryLabel.translatesAutoresizingMaskIntoConstraints = false
         
         categoryValueLabel = UILabel()
@@ -165,7 +186,7 @@ class LocationDetailsViewController: UITableViewController {
     
     private func configureAddPhotoLabel() {
         addPhotoLabel = UILabel()
-        addPhotoLabel.text = "Add Photo"
+        addPhotoLabel.text = LocationDetailsValues.addPhotoLabelText
         addPhotoLabel.translatesAutoresizingMaskIntoConstraints = false
     }
     
@@ -179,7 +200,7 @@ class LocationDetailsViewController: UITableViewController {
     
     private func configureLatitudeLabel() {
         latitudeLabel = UILabel()
-        latitudeLabel.text = "Latitude"
+        latitudeLabel.text = LocationDetailsValues.latitudeLabelText
         latitudeLabel.translatesAutoresizingMaskIntoConstraints = false
         
         latitudeValueLabel = UILabel()
@@ -189,7 +210,7 @@ class LocationDetailsViewController: UITableViewController {
     
     private func configureLongitudeLabel() {
         longitudeLabel = UILabel()
-        longitudeLabel.text = "Longitude"
+        longitudeLabel.text = LocationDetailsValues.longitudeLabelText
         longitudeLabel.translatesAutoresizingMaskIntoConstraints = false
         
         longitudeValueLabel = UILabel()
@@ -199,12 +220,16 @@ class LocationDetailsViewController: UITableViewController {
     
     private func configureAddressLabel() {
         addressLabel = UILabel()
-        addressLabel.text = "Address"
+        addressLabel.text = LocationDetailsValues.addressLabelText
         addressLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         addressLabel.translatesAutoresizingMaskIntoConstraints = false
         
         addressValueLabel = UILabel()
-        addressValueLabel.text = self.string(from: placemark)
+        if let placemark = placemark {
+            addressValueLabel.text = self.string(from: placemark)
+        } else {
+            addressValueLabel.text = LocationDetailsValues.noAddressFoundText
+        }
         addressValueLabel.textAlignment = .right
         addressValueLabel.numberOfLines = 0
         addressValueLabel.lineBreakMode = .byWordWrapping
@@ -214,7 +239,7 @@ class LocationDetailsViewController: UITableViewController {
     
     private func configureDateLabel() {
         dateLabel = UILabel()
-        dateLabel.text = "Date"
+        dateLabel.text = LocationDetailsValues.dateLabelText
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
         
         dateValueLabel = UILabel()
@@ -224,9 +249,9 @@ class LocationDetailsViewController: UITableViewController {
     
     private func configureNavigationUI() {
         if locationToEdit != nil {
-            title = "Edit Location"
+            title = LocationDetailsValues.editLocationTitle
         } else {
-            title = "Tag Location"
+            title = LocationDetailsValues.tagLocationTitle
         }
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancel))
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(done))
@@ -236,12 +261,13 @@ class LocationDetailsViewController: UITableViewController {
     
     @objc private func done() {
         let hudView = HudView.hud(animated: true)
+        
         let location: Location
         if let temp = locationToEdit {
-            hudView.text = "Updated"
+            hudView.text = LocationDetailsValues.updatedHudViewText
             location = temp
         } else {
-            hudView.text = "Tagged"
+            hudView.text = LocationDetailsValues.taggedHudViewText
             location = Location(context: managedObjectContext)
             location.photoID = nil
         }
@@ -252,7 +278,7 @@ class LocationDetailsViewController: UITableViewController {
         location.category = categoryName
         location.placemark = placemark
         
-        // Save image
+        //Save image
         if let image = image {
             if !location.hasPhoto {
                 location.photoID = Location.nextPhotoID() as NSNumber
@@ -266,9 +292,10 @@ class LocationDetailsViewController: UITableViewController {
             }
         }
         
+        //Save location
         do {
             try managedObjectContext.save()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            afterDelay(0.6) {
                 hudView.hide()
                 self.navigationController?.popViewController(animated: true)
             }
@@ -281,15 +308,6 @@ class LocationDetailsViewController: UITableViewController {
         navigationController?.popViewController(animated: true)
     }
     
-    
-//    @objc private func hideKeyboard(_ gestureRecognizer: UIGestureRecognizer) {
-//        let point = gestureRecognizer.location(in: tableView)
-//        let indexPath = tableView.indexPathForRow(at: point)
-//        if indexPath != nil && indexPath!.section == 0 && indexPath!.row == 0 {
-//            return
-//        }
-//        descriptionTextView.resignFirstResponder()
-//    }
 
     // MARK: - Table view data source
 
@@ -448,7 +466,7 @@ class LocationDetailsViewController: UITableViewController {
             imageView.bottomAnchor.constraint(equalTo: contentView.layoutMarginsGuide.bottomAnchor),
             imageView.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
             imageView.leadingAnchor.constraint(equalTo: addPhotoLabel.trailingAnchor),
-            imageView.heightAnchor.constraint(equalToConstant: 44)
+            imageView.heightAnchor.constraint(equalToConstant: LocationDetailsValues.imageViewCompressedHeightConstant)
         ])
         
         cell.accessoryType = .disclosureIndicator
@@ -557,29 +575,15 @@ class LocationDetailsViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    private func string(from placemark: CLPlacemark?) -> String {
-        var text = ""
-        if let placemark = placemark {
-            if let s = placemark.subThoroughfare {
-                text += s + " "
-            }
-            if let s = placemark.thoroughfare {
-                text += s + ", "
-            }
-            if let s = placemark.locality {
-                text += s + ", "
-            }
-            if let s = placemark.administrativeArea {
-                text += s + " "
-            }
-            if let s = placemark.postalCode {
-                text += s + ", "
-            }
-            if let s = placemark.country {
-                text += s
-            }
-        }
-        return text
+    private func string(from placemark: CLPlacemark) -> String {
+        var line = ""
+        line.add(text: placemark.subThoroughfare)
+        line.add(text: placemark.thoroughfare, separatedBy: " ")
+        line.add(text: placemark.locality, separatedBy: ", ")
+        line.add(text: placemark.administrativeArea, separatedBy: ", ")
+        line.add(text: placemark.postalCode, separatedBy: " ")
+        line.add(text: placemark.country, separatedBy: ", ")
+        return line
     }
     
     func format(date: Date) -> String {
@@ -624,13 +628,13 @@ extension LocationDetailsViewController: UIImagePickerControllerDelegate, UINavi
 
     func showPhotoMenu() {
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        let actCancel = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        let actCancel = UIAlertAction(title: LocationDetailsValues.photoCancelTitle, style: .cancel, handler: nil)
         alert.addAction(actCancel)
-        let actPhoto = UIAlertAction(title: "Take Photo", style: .default) { _ in
+        let actPhoto = UIAlertAction(title: LocationDetailsValues.photoTakePhotoTitle, style: .default) { _ in
             self.takePhotoWithCamera()
         }
         alert.addAction(actPhoto)
-        let actLibrary = UIAlertAction(title: "Choose From Library", style: .default) { _ in
+        let actLibrary = UIAlertAction(title: LocationDetailsValues.photoChoosePhotoTitle, style: .default) { _ in
             self.choosePhotoFromLibrary()
         }
         alert.addAction(actLibrary)

@@ -7,6 +7,10 @@
 
 import UIKit
 
+struct CategoryPickerValues {
+    static let cellIdentifier = "Cell"
+}
+
 protocol CategoryPickerProtocol: AnyObject {
     func didSelectCategory(_ categoryName: String)
 }
@@ -14,7 +18,7 @@ protocol CategoryPickerProtocol: AnyObject {
 class CategoryPickerViewController: UITableViewController {
 
     weak var delegate: CategoryPickerProtocol?
-    var selectedCategoryName = "No Category"
+    var selectedCategoryName = ""
     
     private let categories = [
         "No Category",
@@ -33,7 +37,7 @@ class CategoryPickerViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: CategoryPickerValues.cellIdentifier)
         for i in 0..<categories.count {
             if categories[i] == selectedCategoryName {
                 selectedIndexPath = IndexPath(row: i, section: 0)
@@ -47,7 +51,7 @@ class CategoryPickerViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: CategoryPickerValues.cellIdentifier, for: indexPath)
         let categoryName = categories[indexPath.row]
         cell.textLabel!.text = categoryName
         if categoryName == selectedCategoryName {

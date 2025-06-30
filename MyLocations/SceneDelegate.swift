@@ -8,6 +8,26 @@
 import UIKit
 import CoreData
 
+struct SceneDelegateValues {
+    static let tagTitle = "Tag"
+    static let locationTitle = "Locations"
+    static let mapTitle = "Map"
+    
+    static let dataSaveFailedNotification = "dataSaveFailedNotification"
+    
+    static let dataSaveFailedMessage = """
+There was an error saving your data.
+Please contact support at support@example.com and let us know what you were doing when this error occurred.
+The app will now close.
+"""
+    static let dataSaveFailedReason = "Core Data save failed"
+    
+    static let alertTitleText = "Error"
+    static let alertActionText = "OK"
+    
+    static let containerName = "MyLocations"
+}
+
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
@@ -35,15 +55,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     private func tabBarControllerSetup() -> UITabBarController {
         let tagVC = CurrentLocationViewController()
         let tagNavigationVC = UINavigationController(rootViewController: tagVC)
-        tagNavigationVC.tabBarItem.title = "Tag"
+        tagNavigationVC.tabBarItem.title = SceneDelegateValues.tagTitle
         
         let locationsVC = LocationsViewController()
         let locationsNavigationVC = UINavigationController(rootViewController: locationsVC)
-        locationsNavigationVC.tabBarItem.title = "Locations"
+        locationsNavigationVC.tabBarItem.title = SceneDelegateValues.locationTitle
         
         let mapVC = MapViewController()
         let mapNavigationVC = UINavigationController(rootViewController: mapVC)
-        mapNavigationVC.tabBarItem.title = "Map"
+        mapNavigationVC.tabBarItem.title = SceneDelegateValues.mapTitle
         
         let tabBarController = UITabBarController()
         tabBarController.setViewControllers([tagNavigationVC, locationsNavigationVC, mapNavigationVC], animated: false)
@@ -70,20 +90,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleDataSaveFailedNotification),
-            name: NSNotification.Name("dataSaveFailedNotification"),
+            name: NSNotification.Name(SceneDelegateValues.dataSaveFailedNotification),
             object: nil
         )
     }
     
     @objc func handleDataSaveFailedNotification() {
-        let message = """
-There was an error saving your data.
-Please contact support at support@example.com and let us know what you were doing when this error occurred.
-The app will now close.
-"""
-        let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-            let exception = NSException(name: NSExceptionName.genericException, reason: "Core Data save failed", userInfo: nil)
+        let message = SceneDelegateValues.dataSaveFailedMessage
+        let alert = UIAlertController(title: SceneDelegateValues.alertTitleText, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: SceneDelegateValues.alertActionText, style: .default, handler: { _ in
+            let exception = NSException(name: NSExceptionName.genericException, reason: SceneDelegateValues.dataSaveFailedReason, userInfo: nil)
             exception.raise()
         }))
         window?.rootViewController?.present(alert, animated: true, completion: nil)
@@ -93,7 +109,7 @@ The app will now close.
     // MARK: - Core Data stack
 
     lazy var persistentContainer: NSPersistentContainer = {
-        let container = NSPersistentContainer(name: "MyLocations")
+        let container = NSPersistentContainer(name: SceneDelegateValues.containerName)
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
                 fatalError("Unresolved error \(error), \(error.userInfo)")

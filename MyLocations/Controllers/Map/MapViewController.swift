@@ -9,15 +9,33 @@ import UIKit
 import MapKit
 import CoreData
 
+struct MapValues {
+    static let title = "Map"
+    static let leftBarButtonTitle = "Locations"
+    static let rightBarButtonTitle = "User"
+    
+    static let annotationViewIdentifier = "Location"
+    
+    static let radius: CLLocationDistance = 1000
+    
+    static let regionLatitude: CLLocationDegrees = 90
+    static let regionLongitude: CLLocationDegrees = 180
+    
+    static let extraSpace = 1.5
+}
+
 class MapViewController: UIViewController {
     
-    var managedObjectContext: NSManagedObjectContext? {
+    var managedObjectContext: NSManagedObjectContext! {
         didSet {
             NotificationCenter.default.addObserver(
                 forName: .NSManagedObjectContextObjectsDidChange,
                 object: managedObjectContext,
-                queue: nil) { _ in
-                    self.updateLocations()
+                queue: nil) { [weak self] _ in
+                    guard let self = self else { return }
+                    if self.isViewLoaded {
+                        self.updateLocations()
+                    }
                 }
         }
     }
@@ -43,9 +61,9 @@ class MapViewController: UIViewController {
     }
     
     private func navigationBarConfiguration() {
-        title = "Map"
-        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Locations", style: .plain, target: self, action: #selector(showLocations))
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "User", style: .plain, target: self, action: #selector(showUser))
+        title = MapValues.title
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: MapValues.leftBarButtonTitle, style: .plain, target: self, action: #selector(showLocations))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: MapValues.rightBarButtonTitle, style: .plain, target: self, action: #selector(showUser))
     }
     
     private func mapViewConfiguration() {
@@ -70,11 +88,7 @@ class MapViewController: UIViewController {
         mapView.removeAnnotations(locations)
         let fetchRequest = NSFetchRequest<Location>()
         fetchRequest.entity = Location.entity()
-        do {
-            locations = try managedObjectContext!.fetch(fetchRequest)
-        } catch {
-            fatalError("Could not fetch locations: \(error.localizedDescription)")
-        }
+        locations = try! managedObjectContext.fetch(fetchRequest)
         mapView.addAnnotations(locations)
     }
     
@@ -88,15 +102,15 @@ class MapViewController: UIViewController {
     @objc private func showUser() {
         let region = MKCoordinateRegion(
             center: mapView.userLocation.coordinate,
-            latitudinalMeters: 1000,
-            longitudinalMeters: 1000)
-        mapView.setRegion(region, animated: true)
+            latitudinalMeters: MapValues.radius,
+            longitudinalMeters: MapValues.radius)
+        mapView.setRegion(mapView.regionThatFits(region), animated: true)
     }
     
     @objc private func showLocationDetails(_ sender: UIButton) {
         let controller = LocationDetailsViewController()
-        controller.locationToEdit = locations[sender.tag]
         controller.managedObjectContext = managedObjectContext
+        controller.locationToEdit = locations[sender.tag]
         navigationController?.pushViewController(controller, animated: true)
     }
     
@@ -107,19 +121,19 @@ class MapViewController: UIViewController {
         case 0:
             region = MKCoordinateRegion(
                 center: mapView.userLocation.coordinate,
-                latitudinalMeters: 1000,
-                longitudinalMeters: 1000
+                latitudinalMeters: MapValues.radius,
+                longitudinalMeters: MapValues.radius
             )
         case 1:
             let annotation = annotations[annotations.count - 1]
             region = MKCoordinateRegion(
                 center: annotation.coordinate,
-                latitudinalMeters: 1000,
-                longitudinalMeters: 1000
+                latitudinalMeters: MapValues.radius,
+                longitudinalMeters: MapValues.radius
             )
         default:
-            var topLeft = CLLocationCoordinate2D(latitude: -90, longitude: 180)
-            var bottomRight = CLLocationCoordinate2D(latitude: 90, longitude: -180)
+            var topLeft = CLLocationCoordinate2D(latitude: -MapValues.regionLatitude, longitude: MapValues.regionLongitude)
+            var bottomRight = CLLocationCoordinate2D(latitude: MapValues.regionLatitude, longitude: -MapValues.regionLongitude)
             for annotation in annotations {
                 topLeft.latitude = max(topLeft.latitude, annotation.coordinate.latitude)
                 topLeft.longitude = min(topLeft.longitude, annotation.coordinate.longitude)
@@ -131,14 +145,13 @@ class MapViewController: UIViewController {
                 latitude: topLeft.latitude - (topLeft.latitude - bottomRight.latitude) / 2,
                 longitude: topLeft.longitude - (topLeft.longitude - bottomRight.longitude) / 2
             )
-            let extraSpace = 1.1
             let span = MKCoordinateSpan(
-                latitudeDelta: abs(topLeft.latitude - bottomRight.latitude) * extraSpace,
-                longitudeDelta: abs(topLeft.longitude - bottomRight.longitude) * extraSpace
+                latitudeDelta: abs(topLeft.latitude - bottomRight.latitude) * MapValues.extraSpace,
+                longitudeDelta: abs(topLeft.longitude - bottomRight.longitude) * MapValues.extraSpace
             )
             region = MKCoordinateRegion(center: center, span: span)
         }
-        return region
+        return mapView.regionThatFits(region)
     }
 }
 
@@ -147,7 +160,7 @@ extension MapViewController: MKMapViewDelegate {
         guard let annotation = annotation as? Location else {
             return nil
         }
-        let identifier = "Location"
+        let identifier = MapValues.annotationViewIdentifier
         var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
         if annotationView == nil {
             annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
