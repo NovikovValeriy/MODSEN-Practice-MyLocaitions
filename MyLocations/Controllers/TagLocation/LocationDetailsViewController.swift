@@ -41,6 +41,10 @@ class LocationDetailsViewController: UITableViewController {
         didSet {
             if let location = locationToEdit {
                 descriptionText = location.locationDescription
+                categoryName = location.category
+                date = location.date
+                coordinate = CLLocationCoordinate2DMake(location.latitude, location.longitude)
+                placemark = location.placemark
             }
         }
     }
@@ -49,7 +53,9 @@ class LocationDetailsViewController: UITableViewController {
     var coordinate = CLLocationCoordinate2D(latitude: 0, longitude: 0)
     var placemark: CLPlacemark?
     var categoryName = "No Category"
-    private let date = Date()
+    var image: UIImage?
+    var date = Date()
+    var observer: Any!
     
     // UI Elements
     private var descriptionTextView: UITextView!
@@ -57,6 +63,7 @@ class LocationDetailsViewController: UITableViewController {
     private var categoryLabel: UILabel!
     private var categoryValueLabel: UILabel!
     
+    private var imageView: UIImageView!
     private var addPhotoLabel: UILabel!
     
     private var latitudeLabel: UILabel!
@@ -76,6 +83,10 @@ class LocationDetailsViewController: UITableViewController {
         super.init(style: .grouped)
     }
     
+    deinit {
+        NotificationCenter.default.removeObserver(observer!)
+    }
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -84,6 +95,18 @@ class LocationDetailsViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        if let location = locationToEdit {
+            title = "Edit Location"
+            if location.hasPhoto {
+                if let theImage = location.photoImage {
+                    show(image: theImage)
+                }
+            }
+        }
+        
+        listenForBackgroundNotification()
+        
         configureDataSource()
         setupUI()
     }
@@ -109,6 +132,7 @@ class LocationDetailsViewController: UITableViewController {
         configureDescriptionTextView()
         configureCategoryLabel()
         configureAddPhotoLabel()
+        configureImageView()
         configureLatitudeLabel()
         configureLongitudeLabel()
         configureAddressLabel()
@@ -143,6 +167,14 @@ class LocationDetailsViewController: UITableViewController {
         addPhotoLabel = UILabel()
         addPhotoLabel.text = "Add Photo"
         addPhotoLabel.translatesAutoresizingMaskIntoConstraints = false
+    }
+    
+    private func configureImageView() {
+        imageView = UIImageView()
+        imageView.isHidden = true
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        imageView.translatesAutoresizingMaskIntoConstraints = false
     }
     
     private func configureLatitudeLabel() {
@@ -211,6 +243,7 @@ class LocationDetailsViewController: UITableViewController {
         } else {
             hudView.text = "Tagged"
             location = Location(context: managedObjectContext)
+            location.photoID = nil
         }
         location.latitude = coordinate.latitude
         location.longitude = coordinate.longitude
@@ -218,6 +251,20 @@ class LocationDetailsViewController: UITableViewController {
         location.locationDescription = descriptionTextView.text
         location.category = categoryName
         location.placemark = placemark
+        
+        // Save image
+        if let image = image {
+            if !location.hasPhoto {
+                location.photoID = Location.nextPhotoID() as NSNumber
+            }
+            if let data = image.jpegData(compressionQuality: 0.5) {
+                do {
+                    try data.write(to: location.photoURL, options: .atomic)
+                } catch {
+                    print("Error writing file: \(error)")
+                }
+            }
+        }
         
         do {
             try managedObjectContext.save()
@@ -312,7 +359,8 @@ class LocationDetailsViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if indexPath.section == LocationDetailsValues.descriptionSectionID {
+        switch indexPath.section {
+        case LocationDetailsValues.descriptionSectionID:
             if indexPath.row == 0 {
                 descriptionTextView.becomeFirstResponder()
             } else {
@@ -324,6 +372,11 @@ class LocationDetailsViewController: UITableViewController {
                     navigationController?.pushViewController(categoryPickerVC, animated: true)
                 }
             }
+        case LocationDetailsValues.photoSectionID:
+            tableView.deselectRow(at: indexPath, animated: true)
+            pickPhoto()
+        default:
+            break
         }
     }
     
@@ -385,10 +438,17 @@ class LocationDetailsViewController: UITableViewController {
         let contentView = cell.contentView
         
         contentView.addSubview(addPhotoLabel)
+        contentView.addSubview(imageView)
         
         NSLayoutConstraint.activate([
             addPhotoLabel.centerYAnchor.constraint(equalTo: contentView.layoutMarginsGuide.centerYAnchor),
             addPhotoLabel.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
+            
+            imageView.topAnchor.constraint(equalTo: contentView.layoutMarginsGuide.topAnchor),
+            imageView.bottomAnchor.constraint(equalTo: contentView.layoutMarginsGuide.bottomAnchor),
+            imageView.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
+            imageView.leadingAnchor.constraint(equalTo: addPhotoLabel.trailingAnchor),
+            imageView.heightAnchor.constraint(equalToConstant: 44)
         ])
         
         cell.accessoryType = .disclosureIndicator
@@ -478,6 +538,25 @@ class LocationDetailsViewController: UITableViewController {
     
     // MARK: - Helper methods
     
+    func listenForBackgroundNotification() {
+        observer = NotificationCenter.default.addObserver(forName: UIScene.didEnterBackgroundNotification,
+            object: nil, queue: OperationQueue.main) { [weak self] _ in
+            if let weakSelf = self {
+                if weakSelf.presentedViewController != nil {
+                    weakSelf.dismiss(animated: false, completion: nil)
+                }
+                weakSelf.descriptionTextView.resignFirstResponder()
+            }
+        }
+    }
+    
+    private func show(image: UIImage) {
+        imageView.image = image
+        imageView.isHidden = false
+        addPhotoLabel.text = ""
+        tableView.reloadData()
+    }
+    
     private func string(from placemark: CLPlacemark?) -> String {
         var text = ""
         if let placemark = placemark {
@@ -513,6 +592,62 @@ extension LocationDetailsViewController: CategoryPickerProtocol {
         self.categoryName = categoryName
         categoryValueLabel.text = categoryName
         navigationController?.popViewController(animated: true)
+    }
+}
+
+extension LocationDetailsViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    
+    // MARK: - Image Helper Methods
+    func takePhotoWithCamera() {
+        let imagePicker = UIImagePickerController()
+        imagePicker.sourceType = .camera
+        imagePicker.delegate = self
+        imagePicker.allowsEditing = true
+        present(imagePicker, animated: true, completion: nil)
+    }
+    
+    func choosePhotoFromLibrary() {
+        let imagePicker = UIImagePickerController()
+        imagePicker.sourceType = .photoLibrary
+        imagePicker.delegate = self
+        imagePicker.allowsEditing = true
+        present(imagePicker, animated: true, completion: nil)
+    }
+    
+    func pickPhoto() {
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            showPhotoMenu()
+        } else {
+            choosePhotoFromLibrary()
+        }
+    }
+
+    func showPhotoMenu() {
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        let actCancel = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        alert.addAction(actCancel)
+        let actPhoto = UIAlertAction(title: "Take Photo", style: .default) { _ in
+            self.takePhotoWithCamera()
+        }
+        alert.addAction(actPhoto)
+        let actLibrary = UIAlertAction(title: "Choose From Library", style: .default) { _ in
+            self.choosePhotoFromLibrary()
+        }
+        alert.addAction(actLibrary)
+        present(alert, animated: true, completion: nil)
+    }
+
+    // MARK: - Image Picker Delegates
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+        image = info[UIImagePickerController.InfoKey.editedImage] as? UIImage
+        if let theImage = image {
+            show(image: theImage)
+        }
+        dismiss(animated: true, completion: nil)
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        dismiss(animated: true, completion: nil)
     }
 }
 

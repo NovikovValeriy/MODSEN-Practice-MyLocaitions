@@ -66,6 +66,7 @@ class MapViewController: UIViewController {
     // MARK: - Data fetching
     
     func updateLocations() {
+        guard let mapView = mapView else { return }
         mapView.removeAnnotations(locations)
         let fetchRequest = NSFetchRequest<Location>()
         fetchRequest.entity = Location.entity()
